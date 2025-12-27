@@ -148,23 +148,28 @@ app_license = "mit"
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"odoo_xml_rpc.tasks.all"
-# 	],
-# 	"daily": [
-# 		"odoo_xml_rpc.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"odoo_xml_rpc.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"odoo_xml_rpc.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"odoo_xml_rpc.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+    "cron": {
+        "*/5 * * * *": [
+            "odoo_xml_rpc.api.jobs.sync_odoo_products_job"
+        ]
+    }
+	# "all": [
+	# 	"odoo_xml_rpc.tasks.all"
+	# ],
+	# "daily": [
+	# 	"odoo_xml_rpc.tasks.daily"
+	# ],
+	# "hourly": [
+	# 	"odoo_xml_rpc.tasks.hourly"
+	# ],
+	# "weekly": [
+	# 	"odoo_xml_rpc.tasks.weekly"
+	# ],
+	# "monthly": [
+	# 	"odoo_xml_rpc.tasks.monthly"
+	# ],
+}
 
 # Testing
 # -------
