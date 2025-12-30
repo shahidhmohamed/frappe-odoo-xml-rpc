@@ -10,7 +10,7 @@ frappe.listview_settings["Odoo Products"] = {
 		listview.page.clear_primary_action();
 
 		// Make the sync button primary (appears before Add).
-		listview.page.set_primary_action(__("Fetch from Odoo"), () => {
+		listview.page.set_primary_action(__("Sync"), () => {
 			frappe.call({
 				method: "odoo_xml_rpc.api.odoo_bulk_sync.sync_products_incremental",
 				freeze: true,
@@ -32,11 +32,6 @@ frappe.listview_settings["Odoo Products"] = {
 					listview.refresh();
 				},
 			});
-		});
-
-		// Add back the Add button as secondary (to the right).
-		listview.page.add_inner_button(__("Add"), () => {
-			frappe.new_doc("Odoo Products");
 		});
 	},
 };
