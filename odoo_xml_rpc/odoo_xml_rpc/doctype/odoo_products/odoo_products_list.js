@@ -2,10 +2,6 @@
 // For license information, please see license.txt
 frappe.listview_settings["Odoo Products"] = {
 	refresh(listview) {
-		// Prevent adding buttons multiple times.
-		if (listview._odoo_sync_btn_added) return;
-		listview._odoo_sync_btn_added = true;
-
 		// Remove existing primary action (Add).
 		listview.page.clear_primary_action();
 
