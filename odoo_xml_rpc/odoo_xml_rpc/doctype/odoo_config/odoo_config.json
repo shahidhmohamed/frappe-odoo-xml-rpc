@@ -1,0 +1,66 @@
+{
+    "actions": [],
+    "allow_import": 1,
+    "autoname": "",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "field_order": [
+        "odoo_url",
+        "odoo_db",
+        "odoo_uid",
+        "odoo_api_key"
+    ],
+    "fields": [
+        {
+            "fieldname": "odoo_url",
+            "fieldtype": "Data",
+            "label": "Odoo URL",
+            "reqd": 1
+        },
+        {
+            "fieldname": "odoo_db",
+            "fieldtype": "Data",
+            "label": "Odoo DB",
+            "reqd": 1
+        },
+        {
+            "fieldname": "odoo_uid",
+            "fieldtype": "Int",
+            "label": "Odoo UID",
+            "reqd": 1
+        },
+        {
+            "fieldname": "odoo_api_key",
+            "fieldtype": "Password",
+            "label": "Odoo API Key",
+            "reqd": 1
+        }
+    ],
+    "links": [],
+    "modified_by": "Administrator",
+    "module": "Odoo Xml Rpc",
+    "name": "Odoo Config",
+    "issingle": 1,
+    "naming_rule": "",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "share": 1,
+            "write": 1
+        }
+    ],
+    "show_name_in_global_search": 1,
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "states": [],
+    "track_changes": 1
+}

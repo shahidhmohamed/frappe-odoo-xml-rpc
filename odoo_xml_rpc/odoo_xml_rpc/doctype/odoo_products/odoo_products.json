@@ -1,0 +1,135 @@
+{
+    "actions": [],
+    "allow_import": 1,
+    "autoname": "field:odoo_id",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "field_order": [
+        "odoo_id",
+        "product_name",
+        "odoo_write_date",
+        "odoo_active",
+        "odoo_sale_ok",
+        "default_code",
+        "barcode",
+        "list_price",
+        "x_studio_brand",
+        "company_id",
+        "sales_count",
+        "qty_available",
+        "product_image",
+        "product_image_hash"
+    ],
+    "fields": [
+        {
+            "fieldname": "odoo_id",
+            "fieldtype": "Int",
+            "in_list_view": 1,
+            "label": "Odoo ID",
+            "reqd": 1,
+            "unique": 1
+        },
+        {
+            "fieldname": "product_name",
+            "fieldtype": "Data",
+            "in_list_view": 1,
+            "label": "Product Name",
+            "length": "256"
+        },
+        {
+            "fieldname": "odoo_write_date",
+            "fieldtype": "Datetime",
+            "label": "Odoo Write Date",
+            "read_only": 1
+        },
+        {
+            "fieldname": "odoo_active",
+            "fieldtype": "Check",
+            "in_list_view": 1,
+            "label": "Odoo Active"
+        },
+        {
+            "fieldname": "odoo_sale_ok",
+            "fieldtype": "Check",
+            "in_list_view": 1,
+            "label": "Odoo Sale OK"
+        },
+        {
+            "fieldname": "default_code",
+            "fieldtype": "Data",
+            "label": "Default Code"
+        },
+        {
+            "fieldname": "barcode",
+            "fieldtype": "Data",
+            "label": "Barcode"
+        },
+        {
+            "fieldname": "list_price",
+            "fieldtype": "Float",
+            "in_list_view": 1,
+            "label": "List Price"
+        },
+        {
+            "fieldname": "x_studio_brand",
+            "fieldtype": "Data",
+            "label": "Brand"
+        },
+        {
+            "fieldname": "company_id",
+            "fieldtype": "Int",
+            "label": "Company ID"
+        },
+        {
+            "fieldname": "sales_count",
+            "fieldtype": "Float",
+            "label": "Sales Count"
+        },
+        {
+            "fieldname": "qty_available",
+            "fieldtype": "Float",
+            "in_list_view": 1,
+            "label": "Qty Available"
+        },
+        {
+            "fieldname": "product_image",
+            "fieldtype": "Attach Image",
+            "label": "Product Image"
+        },
+        {
+            "fieldname": "product_image_hash",
+            "fieldtype": "Data",
+            "label": "Product Image Hash",
+            "read_only": 1
+        }
+    ],
+    "image_field": "product_image",
+    "links": [],
+    "modified_by": "Administrator",
+    "module": "Odoo Xml Rpc",
+    "name": "Odoo Products",
+    "naming_rule": "",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "share": 1,
+            "write": 1
+        }
+    ],
+    "search_fields": "product_name,odoo_id,default_code,barcode",
+    "show_name_in_global_search": 1,
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "states": [],
+    "title_field": "product_name",
+    "track_changes": 1
+}
