@@ -11,7 +11,16 @@ class OdooClient:
         self.api_key = api_key
         self.timeout = timeout
 
-    def search_read(self, model: str, domain, fields, limit: int = 50, offset: int = 0, order: str = ""):
+    def search_read(
+        self,
+        model: str,
+        domain,
+        fields,
+        limit: int = 50,
+        offset: int = 0,
+        order: str = "",
+        load: bool = False,
+    ):
         payload = {
             "jsonrpc": "2.0",
             "method": "call",
@@ -30,7 +39,7 @@ class OdooClient:
                         "limit": int(limit),
                         "offset": int(offset),
                         "order": order,
-                        "load": False,
+                        "load": bool(load),
                     },
                 ],
             },
