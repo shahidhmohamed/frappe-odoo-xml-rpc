@@ -162,7 +162,7 @@ def _upsert_address(r: dict, customer_doc):
         addr = frappe.new_doc("Address")
         addr.flags.ignore_autoname = True
         addr.address_type = address_type
-        addr.address_title = f"{customer_doc.customer_name[:80]} - {address_type}"[:140]
+        addr.address_title = f"{customer_doc.customer_name[:80]}"
         addr.name = _make_short_name("ODOO-ADDR", odoo_id, address_type)
 
     addr.address_line1 = (r.get("street") or "").strip()
