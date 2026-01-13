@@ -1,6 +1,8 @@
 import re
 import frappe
 from frappe.utils import validate_email_address
+from frappe.utils.background_jobs import get_job as _get_job
+from frappe.utils.background_jobs import get_job_status as _get_job_status
 from odoo_xml_rpc.integrations.odoo_client import get_client
 
 MAX_DOCNAME = 140
@@ -202,7 +204,24 @@ def _upsert_address(r: dict, customer_doc):
 
 
 @frappe.whitelist()
-def fetch_customers_raw(limit: int = 0, batch_size: int = 1000):
+def fetch_customers_raw(limit: int = 0, batch_size: int = 1000, run_async: int = 0):
+    if not frappe.has_permission("Customer", "write"):
+        frappe.throw("Not permitted to update Customers.")
+
+    if int(run_async or 0):
+        job = frappe.enqueue(
+            "odoo_xml_rpc.api.odoo_customer_fetch._run_fetch_customers_raw",
+            queue="long",
+            job_name="fetch_customers_raw",
+            limit=limit,
+            batch_size=batch_size,
+        )
+        return {"job_id": job.id}
+
+    return _run_fetch_customers_raw(limit=limit, batch_size=batch_size)
+
+
+def _run_fetch_customers_raw(limit: int = 0, batch_size: int = 1000):
     """
     Fetch customers from Odoo and return raw data without storing.
     """
@@ -290,3 +309,30 @@ def fetch_customers_raw(limit: int = 0, batch_size: int = 1000):
         "created_addresses": created_addresses,
         "items": items,
     }
+
+
+@frappe.whitelist()
+def get_fetch_customers_job_status(job_id: str):
+    if not frappe.has_permission("Customer", "read"):
+        frappe.throw("Not permitted to read Customers.")
+
+    if not job_id:
+        return {"status": "not_found"}
+
+    if "::" in job_id:
+        job_id = job_id.rsplit("::", 1)[1]
+
+    status = _get_job_status(job_id)
+    if not status:
+        return {"status": "not_found"}
+
+    status_value = getattr(status, "value", None) or str(status)
+    payload = {"status": status_value.lower()}
+
+    job = _get_job(job_id)
+    if job and payload["status"] == "failed":
+        exc_info = getattr(job, "exc_info", None) or ""
+        if exc_info:
+            payload["error"] = exc_info.splitlines()[-1].strip()
+
+    return payload
