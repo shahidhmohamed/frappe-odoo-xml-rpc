@@ -22,6 +22,86 @@ class OdooClient:
         load: bool = False,
         context: dict | None = None,
     ):
+        return self.execute_kw(
+            model=model,
+            method="search_read",
+            args=[domain],
+            kwargs={
+                "fields": fields,
+                "limit": int(limit),
+                "offset": int(offset),
+                "order": order,
+                "load": bool(load),
+                **({"context": context} if context else {}),
+            },
+        )
+
+    def fields_get(self, model: str, fields: list[str]):
+        field_list = [f for f in (fields or []) if f]
+        return self.execute_kw(
+            model=model,
+            method="fields_get",
+            args=[field_list],
+            kwargs={"attributes": ["type", "relation"]},
+        )
+
+    def name_get(self, model: str, ids: list[int]):
+        return self.execute_kw(
+            model=model,
+            method="name_get",
+            args=[list(set(int(i) for i in ids if int(i) > 0))],
+        )
+
+    def web_read(self, model: str, ids: list[int], fields: list[str] | None = None):
+        clean_ids = list(set(int(i) for i in ids if int(i) > 0))
+        spec_list = fields or ["display_name", "name"]
+        spec_dict = {field: {} for field in spec_list}
+        try:
+            return self.execute_kw(
+                model=model,
+                method="web_read",
+                args=[clean_ids, spec_dict],
+            )
+        except frappe.ValidationError:
+            try:
+                return self.execute_kw(
+                    model=model,
+                    method="web_read",
+                    args=[clean_ids, spec_list],
+                )
+            except frappe.ValidationError:
+                try:
+                    return self.execute_kw(
+                        model=model,
+                        method="web_read",
+                        args=[clean_ids],
+                        kwargs={"specification": spec_dict},
+                    )
+                except frappe.ValidationError:
+                    try:
+                        return self.execute_kw(
+                            model=model,
+                            method="web_read",
+                            args=[clean_ids],
+                            kwargs={"specification": spec_list},
+                        )
+                    except frappe.ValidationError:
+                        return self.execute_kw(
+                            model=model,
+                            method="web_read",
+                            args=[clean_ids],
+                            kwargs={"fields": spec_list},
+                        )
+
+    def read(self, model: str, ids: list[int], fields: list[str] | None = None):
+        clean_ids = list(set(int(i) for i in ids if int(i) > 0))
+        return self.execute_kw(
+            model=model,
+            method="read",
+            args=[clean_ids, fields or ["display_name", "name"]],
+        )
+
+    def execute_kw(self, model: str, method: str, args: list | None = None, kwargs: dict | None = None):
         payload = {
             "jsonrpc": "2.0",
             "method": "call",
@@ -33,21 +113,16 @@ class OdooClient:
                     self.uid,
                     self.api_key,
                     model,
-                    "search_read",
-                    [domain],
-                    {
-                        "fields": fields,
-                        "limit": int(limit),
-                        "offset": int(offset),
-                        "order": order,
-                        "load": bool(load),
-                        **({"context": context} if context else {}),
-                    },
+                    method,
+                    args or [],
+                    kwargs or {},
                 ],
             },
             "id": int(time.time() * 1_000_000),
         }
+        return self._post(payload)
 
+    def _post(self, payload: dict):
         r = requests.post(self.url, json=payload, timeout=self.timeout)
         r.raise_for_status()
         data = r.json()
