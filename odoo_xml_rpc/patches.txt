@@ -8,3 +8,5 @@ odoo_xml_rpc.patches.fix_customer_fiscal_position_field
 odoo_xml_rpc.patches.add_customer_extra_fields
 odoo_xml_rpc.patches.add_employee_odoo_id_field
 odoo_xml_rpc.patches.add_user_odoo_id_field
+odoo_xml_rpc.patches.fix_customer_sales_staff_field
+odoo_xml_rpc.patches.dedupe_customer_addresses

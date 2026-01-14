@@ -43,10 +43,14 @@ def execute():
             "fieldtype": "Data",
         },
         {
+            "label": "Customer Type",
+            "fieldname": "custom_customer_type",
+            "fieldtype": "Data",
+        },
+        {
             "label": "Sales Staff",
             "fieldname": "custom_sales_staff",
-            "fieldtype": "Link",
-            "options": "Employee",
+            "fieldtype": "Data",
         },
         {
             "label": "Salesperson",
@@ -110,3 +114,11 @@ def execute():
         )
         doc.insert(ignore_permissions=True)
         insert_after = field["fieldname"]
+
+    # Ensure the DB column type matches the new Data field for Sales Staff
+    try:
+        frappe.db.sql(
+            "alter table `tabCustomer` modify column custom_sales_staff varchar(140)"
+        )
+    except Exception:
+        pass

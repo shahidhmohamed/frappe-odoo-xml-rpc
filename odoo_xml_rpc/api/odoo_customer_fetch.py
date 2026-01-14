@@ -189,6 +189,23 @@ def _build_customer_preview(r: dict) -> dict:
     if lang_name:
         payload["custom_language"] = lang_name
 
+    industry_name = (r.get("industry_display_name") or "").strip() or _m2o_display_name(
+        r.get("industry_id")
+    )
+    if industry_name:
+        payload["industry"] = industry_name
+        payload["custom_customer_type"] = industry_name
+
+    fiscal_position = (r.get("property_account_position_display_name") or "").strip() or _m2o_display_name(
+        r.get("property_account_position_id")
+    )
+    if fiscal_position:
+        payload["custom_fiscal_position"] = fiscal_position
+
+    reference = (r.get("ref") or "").strip()
+    if reference:
+        payload["custom_reference"] = reference
+
     return payload
 
 
@@ -218,6 +235,46 @@ def _fetch_rebate_config(c, rebate_ids: list[int]) -> tuple[dict[int, str], dict
         if row.get("rebate_percentage") is not None:
             pct_map[rid] = row.get("rebate_percentage")
     return name_map, pct_map
+
+
+def _fetch_fiscal_position_map(c, ids: list[int]) -> dict[int, str]:
+    if not ids:
+        return {}
+    try:
+        rows = c.search_read(
+            model="account.fiscal.position",
+            domain=[["id", "in", list(set(ids))]],
+            fields=["id", "name", "display_name"],
+            limit=len(ids),
+            order="id asc",
+        )
+    except Exception:
+        return {}
+    return {
+        int(r.get("id")): (r.get("display_name") or r.get("name") or "")
+        for r in rows
+        if int(r.get("id") or 0)
+    }
+
+
+def _fetch_industry_map(c, ids: list[int]) -> dict[int, str]:
+    if not ids:
+        return {}
+    try:
+        rows = c.search_read(
+            model="res.partner.industry",
+            domain=[["id", "in", list(set(ids))]],
+            fields=["id", "name", "display_name"],
+            limit=len(ids),
+            order="id asc",
+        )
+    except Exception:
+        return {}
+    return {
+        int(r.get("id")): (r.get("display_name") or r.get("name") or "")
+        for r in rows
+        if int(r.get("id") or 0)
+    }
 
 
 def _collect_m2o_ids(rows, fieldname: str) -> list[int]:
@@ -262,6 +319,30 @@ def _fetch_name_map(c, model: str, ids: list[int]) -> dict[int, str]:
     except Exception:
         return {}
     return {int(r.get("id")): (r.get("name") or "") for r in rows}
+
+
+def _fetch_user_name_map(c, ids: list[int]) -> dict[int, str]:
+    if not ids:
+        return {}
+    try:
+        rows = c.search_read(
+            model="res.users",
+            domain=[["id", "in", list(set(ids))]],
+            fields=["id", "name", "display_name", "login"],
+            limit=len(ids),
+            order="id asc",
+        )
+    except Exception:
+        return {}
+    mapping = {}
+    for row in rows:
+        try:
+            uid = int(row.get("id") or 0)
+        except (TypeError, ValueError):
+            continue
+        if uid:
+            mapping[uid] = row.get("name") or row.get("display_name") or row.get("login") or ""
+    return mapping
 
 
 def _fetch_m2o_name_map(c, model: str, fieldname: str, ids: list[int]) -> dict[int, str]:
@@ -426,9 +507,98 @@ def _find_address_by_odoo_partner(odoo_partner_id: int, address_type: str):
     return None
 
 
+def _find_address_by_customer_link(customer_name: str, address_type: str):
+    if not customer_name:
+        return None
+    rows = frappe.db.sql(
+        """
+        select a.name
+        from `tabAddress` a
+        inner join `tabDynamic Link` dl
+            on dl.parent = a.name
+            and dl.parenttype = 'Address'
+            and dl.parentfield = 'links'
+            and dl.link_doctype = 'Customer'
+            and dl.link_name = %s
+        where a.address_type = %s
+        order by a.creation desc
+        limit 1
+        """,
+        (customer_name, address_type),
+        as_list=True,
+    )
+    return rows[0][0] if rows else None
+
+
+def _find_address_by_customer_fields(customer_name: str, address_type: str, r: dict):
+    if not customer_name:
+        return None
+    rows = frappe.db.sql(
+        """
+        select a.name
+        from `tabAddress` a
+        inner join `tabDynamic Link` dl
+            on dl.parent = a.name
+            and dl.parenttype = 'Address'
+            and dl.parentfield = 'links'
+            and dl.link_doctype = 'Customer'
+            and dl.link_name = %s
+        where a.address_type = %s
+          and ifnull(a.address_line1,'') = %s
+          and ifnull(a.address_line2,'') = %s
+          and ifnull(a.city,'') = %s
+          and ifnull(a.state,'') = %s
+          and ifnull(a.country,'') = %s
+          and ifnull(a.pincode,'') = %s
+        limit 1
+        """,
+        (
+            customer_name,
+            address_type,
+            (r.get("street") or "").strip(),
+            (r.get("street2") or "").strip(),
+            (r.get("city") or _m2o_display_name(r.get("city_id")) or "").strip(),
+            (_m2o_display_name(r.get("state_id")) or "").strip(),
+            (_m2o_display_name(r.get("country_id")) or "").strip(),
+            r.get("zip") or "",
+        ),
+        as_list=True,
+    )
+    return rows[0][0] if rows else None
+
+
 def _ensure_address_link(addr, customer_doc):
     if not hasattr(addr, "links"):
         return
+    # Clean duplicates already in memory before adding more
+    if addr.links:
+        seen = set()
+        cleaned = []
+        for row in addr.links:
+            key = (row.link_doctype, row.link_name)
+            if key in seen:
+                continue
+            seen.add(key)
+            cleaned.append(row)
+        if len(cleaned) != len(addr.links):
+            addr.links = cleaned
+    if getattr(addr, "name", None):
+        rows = frappe.db.get_all(
+            "Dynamic Link",
+            filters={
+                "parenttype": "Address",
+                "parentfield": "links",
+                "parent": addr.name,
+                "link_doctype": "Customer",
+                "link_name": customer_doc.name,
+            },
+            pluck="name",
+        )
+        if rows:
+            # keep one, delete any duplicates already stored
+            if len(rows) > 1:
+                frappe.db.delete("Dynamic Link", {"name": ["in", rows[1:]]})
+            return
     for row in (addr.links or []):
         if row.link_doctype == "Customer" and row.link_name == customer_doc.name:
             return
@@ -490,7 +660,7 @@ def _upsert_customer(r: dict):
                 if group_name:
                     cust.customer_group = group_name
 
-    sales_user_name = _m2o_display_name(r.get("user_id"))
+    sales_user_name = (r.get("user_display_name") or "").strip() or _m2o_display_name(r.get("user_id"))
     if hasattr(cust, "custom_salesperson") and sales_user_name:
         user = _find_user_by_full_name(sales_user_name)
         if user:
@@ -498,11 +668,7 @@ def _upsert_customer(r: dict):
 
     sales_staff_name = (r.get("x_studio_sales_staff") or "").strip()
     if hasattr(cust, "custom_sales_staff"):
-        employee = _find_employee_by_name(sales_staff_name)
-        if not employee and sales_user_name:
-            employee = _find_employee_by_user(_find_user_by_full_name(sales_user_name))
-        if employee:
-            cust.custom_sales_staff = employee
+        cust.custom_sales_staff = sales_staff_name
 
     rebate_value = None
     has_rebate = False
@@ -528,6 +694,28 @@ def _upsert_customer(r: dict):
         lang_name = _find_language_name(lang_code)
         if lang_name:
             cust.custom_language = lang_name
+
+    if hasattr(cust, "industry"):
+        industry_name = (r.get("industry_display_name") or "").strip() or _m2o_display_name(
+            r.get("industry_id")
+        )
+        if industry_name and frappe.db.exists("Industry", industry_name):
+            cust.industry = industry_name
+
+    if hasattr(cust, "custom_customer_type"):
+        industry_name = (r.get("industry_display_name") or "").strip() or _m2o_display_name(
+            r.get("industry_id")
+        )
+        cust.custom_customer_type = industry_name
+
+    if hasattr(cust, "custom_fiscal_position"):
+        fiscal_position = (r.get("property_account_position_display_name") or "").strip() or _m2o_display_name(
+            r.get("property_account_position_id")
+        )
+        cust.custom_fiscal_position = fiscal_position
+
+    if hasattr(cust, "custom_reference"):
+        cust.custom_reference = (r.get("ref") or "").strip()
 
     if hasattr(cust, "custom_partner_type"):
         cust.custom_partner_type = (r.get("x_studio_partner_type") or "").strip()
@@ -574,6 +762,13 @@ def _upsert_address(r: dict, customer_doc):
 
     address_type = "Billing"
     existing = _find_address_by_odoo_partner(odoo_id, address_type)
+    if not existing:
+        existing = _find_address_by_customer_link(customer_doc.name, address_type)
+    if not existing:
+        existing = _find_address_by_customer_fields(customer_doc.name, address_type, r)
+    fallback_name = _make_short_name("ODOO-ADDR", odoo_id, address_type)
+    if not existing and frappe.db.exists("Address", fallback_name):
+        existing = fallback_name
     if existing:
         addr = frappe.get_doc("Address", existing)
     else:
@@ -581,7 +776,7 @@ def _upsert_address(r: dict, customer_doc):
         addr.flags.ignore_autoname = True
         addr.address_type = address_type
         addr.address_title = f"{customer_doc.customer_name[:80]}"
-        addr.name = _make_short_name("ODOO-ADDR", odoo_id, address_type)
+        addr.name = fallback_name
 
     addr.address_line1 = (r.get("street") or "").strip()
     addr.address_line2 = (r.get("street2") or "").strip()
@@ -660,6 +855,9 @@ def preview_customer_sync(sample_name: str = ""):
         "x_studio_old_customer_no",
         "x_studio_old_rec",
         "lang",
+        "industry_id",
+        "property_account_position_id",
+        "ref",
     ]
     domain = ["|", ["customer_rank", ">", 0], ["x_studio_partner_type", "=", "Customer"]]
     if sample_name:
@@ -678,6 +876,16 @@ def preview_customer_sync(sample_name: str = ""):
         return {"odoo_raw": None, "converted": None}
 
     r = dict(rows[0])
+    user_id = _collect_m2o_ids([r], "user_id")
+    if user_id:
+        user_map = _fetch_user_name_map(c, user_id)
+        if user_id[0] in user_map:
+            r["user_display_name"] = user_map.get(user_id[0])
+    industry_id = _collect_m2o_ids([r], "industry_id")
+    if industry_id:
+        industry_map = _fetch_industry_map(c, industry_id)
+        if industry_id[0] in industry_map:
+            r["industry_display_name"] = industry_map.get(industry_id[0])
     partner_id = int(r.get("id") or 0)
     if partner_id:
         try:
@@ -705,6 +913,11 @@ def preview_customer_sync(sample_name: str = ""):
             r["rebate_display_name"] = rebate_display
         if rebate_id[0] in pct_map:
             r["rebate_percentage"] = pct_map.get(rebate_id[0])
+    fiscal_ids = _collect_m2o_ids([r], "property_account_position_id")
+    if fiscal_ids:
+        fiscal_map = _fetch_fiscal_position_map(c, fiscal_ids)
+        if fiscal_ids[0] in fiscal_map:
+            r["property_account_position_display_name"] = fiscal_map.get(fiscal_ids[0])
     category_name = _first_category_name(r.get("category_id"))
     if not category_name:
         category_id = _first_category_id(r.get("category_id"))
@@ -755,6 +968,9 @@ def _run_fetch_customers_raw(limit: int = 0, batch_size: int = 1000):
         "x_studio_old_customer_no",
         "x_studio_old_rec",
         "lang",
+        "industry_id",
+        "property_account_position_id",
+        "ref",
     ]
 
     domain = ["|", ["customer_rank", ">", 0], ["x_studio_partner_type", "=", "Customer"]]
@@ -820,6 +1036,10 @@ def _run_fetch_customers_raw(limit: int = 0, batch_size: int = 1000):
     if rebate_ids_direct:
         rebate_by_id, rebate_pct_by_id = _fetch_rebate_config(c, rebate_ids_direct)
 
+    user_ids = _collect_m2o_ids(rows, "user_id")
+    user_map = _fetch_user_name_map(c, user_ids)
+    industry_ids = _collect_m2o_ids(rows, "industry_id")
+    industry_map = _fetch_industry_map(c, industry_ids)
     city_ids = _collect_m2o_ids(rows, "city_id")
     state_ids = _collect_m2o_ids(rows, "state_id")
     country_ids = _collect_m2o_ids(rows, "country_id")
@@ -835,6 +1055,8 @@ def _run_fetch_customers_raw(limit: int = 0, batch_size: int = 1000):
     country_map = _fetch_name_map(c, "res.country", country_ids)
     category_map = _fetch_name_map(c, "res.partner.category", category_ids)
     rebate_map, rebate_pct_by_id = _fetch_rebate_config(c, rebate_ids)
+    fiscal_ids = _collect_m2o_ids(rows, "property_account_position_id")
+    fiscal_map = _fetch_fiscal_position_map(c, fiscal_ids)
 
     items = []
     created_customers = 0
@@ -851,6 +1073,18 @@ def _run_fetch_customers_raw(limit: int = 0, batch_size: int = 1000):
         category_name = _first_category_name(r.get("category_id")) or category_map.get(
             _first_category_id(r.get("category_id")), ""
         )
+        industry_name = ""
+        industry_id = _collect_m2o_ids([r], "industry_id")
+        if industry_id:
+            industry_name = industry_map.get(industry_id[0], "")
+        fiscal_name = ""
+        fiscal_id = _collect_m2o_ids([r], "property_account_position_id")
+        if fiscal_id:
+            fiscal_name = fiscal_map.get(fiscal_id[0], "")
+        user_name = ""
+        user_id = _collect_m2o_ids([r], "user_id")
+        if user_id:
+            user_name = user_map.get(user_id[0], "")
         rebate_name = ""
         if isinstance(r.get("rebate_name"), dict):
             rebate_name = r.get("rebate_name", {}).get("display_name") or ""
@@ -876,6 +1110,12 @@ def _run_fetch_customers_raw(limit: int = 0, batch_size: int = 1000):
         r["state_display_name"] = state_name
         r["country_display_name"] = country_name
         r["category_display_name"] = category_name
+        if industry_name:
+            r["industry_display_name"] = industry_name
+        if fiscal_name:
+            r["property_account_position_display_name"] = fiscal_name
+        if user_name:
+            r["user_display_name"] = user_name
         if rebate_name:
             r["rebate_display_name"] = rebate_name
 
