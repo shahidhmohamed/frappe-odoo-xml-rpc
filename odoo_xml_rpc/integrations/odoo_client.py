@@ -20,6 +20,7 @@ class OdooClient:
         offset: int = 0,
         order: str = "",
         load: bool = False,
+        context: dict | None = None,
     ):
         payload = {
             "jsonrpc": "2.0",
@@ -40,6 +41,7 @@ class OdooClient:
                         "offset": int(offset),
                         "order": order,
                         "load": bool(load),
+                        **({"context": context} if context else {}),
                     },
                 ],
             },

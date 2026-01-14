@@ -1,80 +1,76 @@
 {
-    "actions": [],
-    "allow_import": 0,
-    "autoname": "",
-    "doctype": "DocType",
-    "editable_grid": 1,
-    "engine": "InnoDB",
-    "field_order": [
-        "sync_limit",
-        "sync_with_images",
-        "overwrite_images",
-        "only_update_images_if_changed",
-        "last_product_sync_write_date",
-        "last_product_sync_last_id"
-    ],
-    "fields": [
-        {
-            "default": "200",
-            "fieldname": "sync_limit",
-            "fieldtype": "Int",
-            "label": "Sync Limit"
-        },
-        {
-            "default": "0",
-            "fieldname": "sync_with_images",
-            "fieldtype": "Check",
-            "label": "Sync With Images"
-        },
-        {
-            "default": "0",
-            "fieldname": "overwrite_images",
-            "fieldtype": "Check",
-            "label": "Overwrite Images"
-        },
-        {
-            "default": "1",
-            "fieldname": "only_update_images_if_changed",
-            "fieldtype": "Check",
-            "label": "Only Update Images If Changed"
-        },
-        {
-            "fieldname": "last_product_sync_write_date",
-            "fieldtype": "Datetime",
-            "label": "Last Product Sync Write Date",
-            "read_only": 1
-        },
-        {
-            "fieldname": "last_product_sync_last_id",
-            "fieldtype": "Int",
-            "label": "Last Product Sync Last ID",
-            "read_only": 1
-        }
-    ],
-    "links": [],
-    "modified_by": "Administrator",
-    "module": "Odoo Xml Rpc",
-    "name": "Odoo Sync Settings",
-    "issingle": 1,
-    "naming_rule": "",
-    "owner": "Administrator",
-    "permissions": [
-        {
-            "create": 1,
-            "delete": 1,
-            "email": 1,
-            "export": 1,
-            "print": 1,
-            "read": 1,
-            "report": 1,
-            "role": "System Manager",
-            "share": 1,
-            "write": 1
-        }
-    ],
-    "show_name_in_global_search": 1,
-    "sort_field": "modified",
-    "sort_order": "DESC",
-    "states": [],
-    "track_changes": 1
+ "actions": [],
+ "creation": "2026-01-09 15:10:17.098802",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "sync_limit",
+  "sync_with_images",
+  "overwrite_images",
+  "only_update_images_if_changed",
+  "last_product_sync_write_date",
+  "last_product_sync_last_id"
+ ],
+ "fields": [
+  {
+   "default": "200",
+   "fieldname": "sync_limit",
+   "fieldtype": "Int",
+   "label": "Sync Limit"
+  },
+  {
+   "default": "0",
+   "fieldname": "sync_with_images",
+   "fieldtype": "Check",
+   "label": "Sync With Images"
+  },
+  {
+   "default": "0",
+   "fieldname": "overwrite_images",
+   "fieldtype": "Check",
+   "label": "Overwrite Images"
+  },
+  {
+   "default": "1",
+   "fieldname": "only_update_images_if_changed",
+   "fieldtype": "Check",
+   "label": "Only Update Images If Changed"
+  },
+  {
+   "fieldname": "last_product_sync_write_date",
+   "fieldtype": "Datetime",
+   "label": "Last Product Sync Write Date"
+  },
+  {
+   "fieldname": "last_product_sync_last_id",
+   "fieldtype": "Int",
+   "label": "Last Product Sync Last ID"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-01-13 18:48:09.821319",
+ "modified_by": "Administrator",
+ "module": "Odoo Xml Rpc",
+ "name": "Odoo Sync Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "show_name_in_global_search": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }
