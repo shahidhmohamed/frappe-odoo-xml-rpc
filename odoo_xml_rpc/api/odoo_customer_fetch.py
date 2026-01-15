@@ -492,7 +492,11 @@ def _safe_customer_name(name: str, odoo_id: int) -> str:
         return str(odoo_id)
     if frappe.db.exists("Customer Group", cleaned):
         suffix = f" ({int(odoo_id)})"
-        return (cleaned + suffix)[:MAX_DOCNAME]
+        max_len = MAX_DOCNAME
+        base = cleaned
+        if len(base) + len(suffix) > max_len:
+            base = base[: max_len - len(suffix)].rstrip()
+        return (base + suffix)[:MAX_DOCNAME]
     return cleaned[:MAX_DOCNAME]
 
 
